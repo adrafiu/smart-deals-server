@@ -26,8 +26,9 @@ async function run() {
 
     const db = client.db("smart_db"); // smart_db ডাটাবেসের সাথে কানেকশন নিলাম
     const productsCollection = db.collection("products"); // products collection ধরলাম
+    const bidsCollection = db.collection("bids");
 
-    // CREATE (POST)
+    //products: CREATE (POST)
     app.post("/products", async (req, res) => {
       const newProduct = req.body;
       //   console.log("user info", newProduct); // ক্লায়েন্ট পাঠানো ডেটা কনসোলে দেখাবে
@@ -35,14 +36,51 @@ async function run() {
       res.send(result);
     });
 
-    // READ (GET all users)
-    app.get("/products", async (req, res) => {
-      const cursor = productsCollection.find();
-      const result = await cursor.toArray();
+    //bids: CREATE (POST)
+    app.post("/bids", async (req, res) => {
+      const newBid = req.body;
+      const result = await bidsCollection.insertOne(newBid);
       res.send(result);
     });
 
-    // READ (GET single user by ID)
+    //products: READ (GET all users)
+    app.get("/products", async (req, res) => {
+      // //.project(projectFields) → শুধু title, price_min, price_max, image দেখাবে
+      // const projectFields = { title: 1, price_min: 1, price_max: 1, image: 1 };
+      // // Products collection থেকে price_min অনুযায়ী ascending (বড় থেকে ছোট )
+      // const cursor = productsCollection
+      //   .find() //সব records
+      //   .sort({ price_min: -1 }) //descending order
+      //   .skip(2) //প্রথম 2 records বাদ
+      //   .limit(2) //পরের 2 records নাও
+      //   .project(projectFields); //শুধু নির্দিষ্ট fields দেখাও
+
+      console.log(req.query);
+      const email = req.query.email; //এখানে query parameter থেকে email বের করে নেওয়া হচ্ছে।
+      //প্রথমে একটি খালি query অবজেক্ট বানানো হচ্ছে। এটি MongoDB-র find() ফাংশনে পাঠানো হবে।
+      const query = {};
+      if (email) {
+        query.email = email;
+      }
+
+      const cursor = productsCollection.find(query);
+      const result = await cursor.toArray(); //array আকারে fetch করো
+      res.send(result);
+    });
+
+    //bids: READ (GET all users)
+    app.get("/bids", async (req, res) => {
+      const email = req.query.email;
+      const query = {};
+      if (email) {
+        query.buyer_email = email;
+      }
+      const cursor = bidsCollection.find(query);
+      const result = await cursor.toArray(); //array আকারে fetch করো
+      res.send(result);
+    });
+
+    //products: READ (GET single user by ID)
     app.get("/products/:id", async (req, res) => {
       const id = req.params.id;
       //   console.log("need user with id", id);
@@ -51,7 +89,7 @@ async function run() {
       res.send(result);
     });
 
-    //PATH (Server side)
+    //products: PATH (Server side)
     app.patch("/products/:id", async (req, res) => {
       const id = req.params.id;
       const updatedProduct = req.body;
@@ -70,7 +108,7 @@ async function run() {
       res.send(result);
     });
 
-    // DELETE
+    //products: DELETE
     app.delete("/products/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
