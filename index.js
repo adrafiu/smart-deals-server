@@ -27,6 +27,7 @@ async function run() {
     const db = client.db("smart_db"); // smart_db ডাটাবেসের সাথে কানেকশন নিলাম
     const productsCollection = db.collection("products"); // products collection ধরলাম
     const bidsCollection = db.collection("bids");
+    const usersCollection = db.collection("users");
 
     //products: CREATE (POST)
     app.post("/products", async (req, res) => {
@@ -41,6 +42,25 @@ async function run() {
       const newBid = req.body;
       const result = await bidsCollection.insertOne(newBid);
       res.send(result);
+    });
+
+    //users: CREATE (POST)
+    app.post("/users", async (req, res) => {
+      const newUser = req.body; //শুধু email বের করা হচ্ছে, যাতে দেখা যায় একই user আগেই আছে কি না।
+
+      const email = req.body.email;
+      const query = { email: email };
+      const existingUser = await usersCollection.findOne(query);
+      if (existingUser) {
+        //MongoDB এর findOne দিয়ে ডাটাবেসে ওই email আগে আছে কি না চেক করা হচ্ছে।
+        res.send({
+          message: "user already exists. do not need to insert again",
+        });
+      } else {
+        //না থাকলে → insertOne(newUser) দিয়ে নতুন user ডাটাবেসে সংরক্ষণ হচ্ছে এবং result পাঠানো হচ্ছে।
+        const result = await usersCollection.insertOne(newUser);
+        res.send(result);
+      }
     });
 
     //products: READ (GET all users)
